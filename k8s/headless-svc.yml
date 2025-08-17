@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-headless
+  namespace: three-tier
+spec:
+  clusterIP: None    # makes it headless
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017

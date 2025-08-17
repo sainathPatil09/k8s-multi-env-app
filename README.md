@@ -14,6 +14,7 @@ This project demonstrates a robust Kubernetes setup on AWS EKS with multi-node c
 - **Cluster Monitoring:** Integrated monitoring with **Prometheus** and **Grafana** for metrics and alerts.
 
 ## **Architecture**
+![3-Tier Web App Architecture on EKS](architecture.png)
 
 ## **Prerequisites**
 
@@ -197,7 +198,7 @@ kubectl apply -f configmap.yml
 kubectl apply -f headless-svc.yml
 kubectl apply -f mongo-service.yml
 kubectl apply -f mongo-deployment.yml
-kubectl apply -f backend-deployment.yml
+kubectl apply -f backend-statefullset.yml
 kubectl apply -f backend-service.yml
 kubectl apply -f frontend-deployment.yml
 kubectl apply -f frontend-service.yml

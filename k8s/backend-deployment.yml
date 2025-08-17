@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: three-tier
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: wiings09/book-backend:v1
+          ports:
+            - containerPort: 4001
+          env:
+            - name: MongoDBURL
+              value: "mongodb://admin:password@mongo-0.mongo-headless.three-tier.svc.cluster.local:27017,mongo-1.mongo-headless.three-tier.svc.cluster.local:27017,mongo-2.mongo-headless.three-tier.svc.cluster.local:27017/bookstore?replicaSet=rs0"
+          livenessProbe:
+            httpGet:
+              path: /ok
+              port: 4001
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ok
+              port: 4001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1

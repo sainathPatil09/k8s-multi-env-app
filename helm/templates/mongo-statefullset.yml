@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.mongo.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.mongo.name }}
+spec:
+  serviceName: {{ .Values.mongo.headlessService }}
+  replicas: {{ .Values.mongo.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.mongo.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.mongo.name }}
+    spec:
+      containers:
+      - name: {{ .Values.mongo.name }}
+        image: {{ .Values.mongo.image }}
+        ports:
+        - containerPort: 27017
+        env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: {{ .Values.mongo.secretName }}
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: {{ .Values.mongo.secretName }}
+        command:
+          - mongod
+          - "--bind_ip_all"
+          - --config=/etc/mongo/mongodb.conf
+        volumeMounts:
+        - name: mongo-storage
+          mountPath: /data/db
+        - name: mongodb-config
+          mountPath: /etc/mongo
+      volumes:
+      - name: mongodb-config
+        configMap:
+          name: {{ .Values.mongo.configMap }}
+          items:
+            - key: mongodb.conf
+              path: mongodb.conf
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: {{ .Values.mongo.storageClass }}
+      resources:
+        requests:
+          storage: {{ .Values.mongo.storage }}

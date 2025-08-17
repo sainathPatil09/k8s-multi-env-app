@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: {{ .Values.namespace }}
+immutable: {{ .Values.mongodbConfig.immutable }}
+data:
+  mongodb.conf: |
+    {{ .Values.mongodbConfig.mongodbConf | nindent 4 }}
+

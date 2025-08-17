@@ -1,0 +1,107 @@
+namespace: dev
+
+frontend:
+  name: frontend
+  replicas: 1
+  image: wiings09/book-frontend:v1
+  imagePullPolicy: Always
+  containerPort: 80
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+  resources:
+    requests:
+      memory: 20Mi
+      cpu: "0.25"
+    limits:
+      memory: 400Mi
+      cpu: "1"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+    cpuTarget: 70
+  
+frontendService:
+  name: frontend-service
+  selector: frontend
+  port: 80
+  targetPort: 80
+  type: ClusterIP
+
+backend:
+  replicas: 1
+  strategy:
+    maxSurge: 1
+    maxUnavailable: 0
+  image:
+    repository: wiings09/book-backend
+    tag: v1
+  containerPort: 4001
+  env:
+    MongoDBURL: "mongodb://admin:mypassword@mongo-0.mongo-headless.dev.svc.cluster.local:27017,mongo-1.mongo-headless.dev.svc.cluster.local:27017/bookstore?replicaSet=rs0&authSource=admin"
+  liveness:
+    path: /ok
+    port: 4001
+    initialDelaySeconds: 2
+    periodSeconds: 5
+  readiness:
+    path: /ok
+    port: 4001
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+    cpuTarget: 65
+
+backendService:
+  port: 4001
+  targetPort: 4001
+  type: ClusterIP
+
+mongodbConfig:
+  immutable: false
+  mongodbConf: |
+    storage:
+      dbPath: /data/configdb
+    replication:
+      replSetName: "rs0"
+
+
+mongo:
+  name: mongo
+  headlessService: mongo-headless
+  replicas: 2
+  image: mongo:6.0
+  secretName: mongodb-secret
+  configMap: mongodb-config
+  storageClass: aws-ebs
+  storage: 1Gi
+  serviceName: mongodb-svc
+  username: admin
+  password: mypassword
+  
+
+mongoHeadless:
+  name: mongo-headless
+  selector: mongo
+  port: 27017
+  targetPort: 27017
+
+ingress:
+  name: app-ingress
+  className: nginx
+  host: myapp.local
+  frontendService: frontend-service
+  frontendPort: 80
+  backendService: backend-service
+  backendPort: 4001
+
+storageClass:
+  name: aws-ebs
+  provisioner: ebs.csi.aws.com
+  type: gp2
+  volumeBindingMode: WaitForFirstConsumer
+  reclaimPolicy: Delete

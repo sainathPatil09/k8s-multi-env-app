@@ -1,0 +1,106 @@
+namespace: staging
+
+frontend:
+  name: frontend
+  replicas: 2
+  image: wiings09/book-frontend:v1
+  imagePullPolicy: Always
+  containerPort: 80
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+  resources:
+    requests:
+      memory: 50Mi
+      cpu: "0.5"
+    limits:
+      memory: 500Mi
+      cpu: "1.5"
+  hpa:
+    minReplicas: 2
+    maxReplicas: 5
+    cpuTarget: 70
+
+frontendService:
+  name: frontend-service
+  selector: frontend
+  port: 80
+  targetPort: 80
+  type: ClusterIP
+
+backend:
+  replicas: 2
+  strategy:
+    maxSurge: 1
+    maxUnavailable: 0
+  image:
+    repository: wiings09/book-backend
+    tag: v1
+  containerPort: 4001
+  env:
+    MongoDBURL: "mongodb://admin:mypassword@mongo-0.mongo-headless.staging.svc.cluster.local:27017,mongo-1.mongo-headless.staging.svc.cluster.local:27017,mongo-2.mongo-headless.staging.svc.cluster.local:27017/bookstore?replicaSet=rs0&authSource=admin"
+  liveness:
+    path: /ok
+    port: 4001
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readiness:
+    path: /ok
+    port: 4001
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+
+  hpa:
+    minReplicas: 2
+    maxReplicas: 5
+    cpuTarget: 65
+
+backendService:
+  port: 4001
+  targetPort: 4001
+  type: ClusterIP
+
+mongodbConfig:
+  immutable: false
+  mongodbConf: |
+    storage:
+      dbPath: /data/configdb
+    replication:
+      replSetName: "rs0"
+
+mongo:
+  name: mongo
+  headlessService: mongo-headless
+  replicas: 3
+  image: mongo:6.0
+  secretName: mongodb-secret
+  configMap: mongodb-config
+  storageClass: aws-ebs
+  storage: 2Gi
+  serviceName: mongodb-svc
+  username: admin
+  password: mypassword
+
+mongoHeadless:
+  name: mongo-headless
+  selector: mongo
+  port: 27017
+  targetPort: 27017
+
+ingress:
+  name: app-ingress
+  className: nginx
+  host: staging.myapp.local
+  frontendService: frontend-service
+  frontendPort: 80
+  backendService: backend-service
+  backendPort: 4001
+
+storageClass:
+  name: aws-ebs-stage
+  provisioner: ebs.csi.aws.com
+  type: gp2
+  volumeBindingMode: WaitForFirstConsumer
+  reclaimPolicy: Delete
+

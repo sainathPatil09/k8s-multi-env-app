@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.backend.strategy.maxSurge }}
+      maxUnavailable: {{ .Values.backend.strategy.maxUnavailable }}
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.backend.containerPort }}
+          env:
+            - name: MongoDBURL
+              value: {{ .Values.backend.env.MongoDBURL | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.liveness.path }}
+              port: {{ .Values.backend.liveness.port }}
+            initialDelaySeconds: {{ .Values.backend.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.readiness.path }}
+              port: {{ .Values.backend.readiness.port }}
+            initialDelaySeconds: {{ .Values.backend.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.readiness.periodSeconds }}
+            successThreshold: {{ .Values.backend.readiness.successThreshold }}

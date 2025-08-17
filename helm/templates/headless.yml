@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mongoHeadless.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None  # headless service
+  selector:
+    app: {{ .Values.mongoHeadless.selector }}
+  ports:
+    - port: {{ .Values.mongoHeadless.port }}
+      targetPort: {{ .Values.mongoHeadless.targetPort }}
