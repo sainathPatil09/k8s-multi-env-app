@@ -168,7 +168,7 @@ aws iam attach-role-policy \
 - Install the EBS CSI Driver via Helm
 
 ```
-helm install aws-ebs-csi-driver aws-ebs-csi-driver/helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
+helm install aws-ebs-csi-driver aws-ebs-csi-driver \
   --namespace kube-system
 
 ```
